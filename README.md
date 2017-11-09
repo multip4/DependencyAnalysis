@@ -1,10 +1,11 @@
 p4c-multip4: Multi-piplined FPGA P4 backend compiler
 ===================================================
 
-# Match-action Dependency Analyzer (MDA)
+## Table Analyzer
 
-Match-action Dependency Analyzer (MDA) analyzes the dependency among
-match-action tables and actions.
+Table Analyzer analyzes the dependency among tables and actions. Currently
+Table Analyzer presents the tables and corresponding keys (matches) and 
+actions.
 
 ## Getting started
 
@@ -22,8 +23,6 @@ ln -s [path_to_your_p4c-multip4] [~/p4/p4c/extensions/p4c-multip4]
 
 ## To-do
 
-1. Make table-actions list with `Visitor`, `P4Table::getActionList()`.
+1. Analyze action inside!
 
-2. Make table-reads list with `Visitor`, `P4Table::getKey()`.
-
-3. What is in `ActionListElement.expression`?
+2. How to use `LOG()` instead of `std::cout`? 

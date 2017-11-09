@@ -1,3 +1,5 @@
+//seungbin
+
 #include "ir/ir.h"
 #include "lib/log.h"
 #include "lib/error.h"
@@ -8,6 +10,8 @@
 #include "frontends/common/parseInput.h"
 #include "frontends/p4/evaluator/evaluator.h"
 #include "frontends/p4/frontend.h"
+
+#include "tableAnalyzer.h"
 
 namespace multip4 {
   
@@ -37,7 +41,8 @@ namespace multip4 {
         new VisitFunctor([this, evaluator]() { toplevel = evaluator->getToplevelBlock(); }),
     });
   } 
-}
+
+} //namespace multip4
 
 int main(int argc, char *const argv[]) {
 	setup_gc_logging();
@@ -83,9 +88,9 @@ int main(int argc, char *const argv[]) {
   if (::errorCount() > 0)
     return 1;
 
-  LOG1("Generating match-action dependency graphs");
-  //multip4::MatchActionAnalyzer mda(&midEnd.refMap, &midEnd.typeMap);
-  ///top->getMain()->apply(mda);
+  std::cout << "Generating match-action dependency graphs" << std::endl;
+  multip4::TableAnalyzer ta(&midEnd.refMap, &midEnd.typeMap);
+  top->getMain()->apply(ta);
 
   return ::errorCount() > 0;
 
