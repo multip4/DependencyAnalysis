@@ -1,4 +1,6 @@
-//seungbin
+/*
+Written by Seungbin Song
+*/
 
 #include "ir/ir.h"
 #include "lib/log.h"
@@ -12,7 +14,9 @@
 #include "frontends/p4/frontend.h"
 
 #include "tableAnalyzer.h"
+//#include "midend.h"
 
+/* MIDEND will be implemented by 'midend.cpp'. */
 namespace multip4 {
   
   class Options : public CompilerOptions {};
@@ -43,6 +47,8 @@ namespace multip4 {
   } 
 
 } //namespace multip4
+/**/
+
 
 int main(int argc, char *const argv[]) {
 	setup_gc_logging();
