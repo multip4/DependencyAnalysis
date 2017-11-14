@@ -28,8 +28,6 @@ limitations under the License.
 #include "midend/actionsInlining.h"
 #include "midend/inlining.h"
 #include "midend/convertEnums.h"
-#include "helpers.h"
-#include "options.h"
 
 namespace multip4 {
 

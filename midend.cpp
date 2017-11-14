@@ -19,7 +19,6 @@ limitations under the License.
 */
 
 #include "midend.h"
-#include "lower.h"
 #include "frontends/common/constantFolding.h"
 #include "frontends/common/resolveReferences/resolveReferences.h"
 #include "frontends/p4/evaluator/evaluator.h"
@@ -60,8 +59,6 @@ limitations under the License.
 #include "midend/dontcareArgs.h"
 
 namespace multip4 {
-
-  class Options : public CompilerOptions {};
 
 /**
 This class implements a policy suitable for the ConvertEnums pass.
