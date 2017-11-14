@@ -25,7 +25,7 @@ namespace multip4 {
       bool preorder(const IR::IfStatement *statement) override;
       bool preorder(const IR::SwitchStatement *statement) override;
       bool preorder(const IR::MethodCallStatement *statement) override;
-      bool preorder(const IR::AssignmentStatement *) override;
+      bool preorder(const IR::AssignmentStatement *statement) override;
       bool preorder(const IR::ReturnStatement *) override;
       bool preorder(const IR::ExitStatement *) override;
       bool preorder(const IR::P4Table *table) override;

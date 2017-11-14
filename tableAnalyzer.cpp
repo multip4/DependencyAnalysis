@@ -32,13 +32,19 @@ namespace multip4 {
   }
 
   bool TableAnalyzer::preorder(const IR::P4Control *cont) {
+    auto decls = cont->getDeclarations();
+    for (auto i = decls->begin(); i != decls->end(); ++i) {
+      auto p4action = (*i)->to<IR::P4Action>();
+      visit(p4action);
+    }
     visit(cont->body);
     return false;
   }
 
   bool TableAnalyzer::preorder(const IR::BlockStatement *statement) {
-    for (const auto component : statement->components)
+    for (const auto component : statement->components) {
       visit(component);
+    }
     return false;
   }
 
@@ -95,7 +101,10 @@ namespace multip4 {
     return false;
   }
 
-  bool TableAnalyzer::preorder(const IR::AssignmentStatement *) {
+  bool TableAnalyzer::preorder(const IR::AssignmentStatement *statement) {
+    std::cout << "    Assignment: ";
+    statement->dbprint(std::cout);
+    std::cout << std::endl;
     return false;
   }
 
@@ -136,13 +145,12 @@ namespace multip4 {
 
   bool TableAnalyzer::preorder(const IR::ActionListElement *action) {
     std::cout << "  Action: " << action->toString() << std::endl;
-
     return false;
   }
 
   bool TableAnalyzer::preorder(const IR::P4Action *action) {
     std::cout << "  P4Action: " << action->toString() << std::endl;
-
+    visit(action->body);
     return false;
   }
 
