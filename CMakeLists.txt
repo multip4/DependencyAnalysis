@@ -1,4 +1,4 @@
-# By Seungbin Song
+# Written by Seungbin Song
 
 set (MULTIP4_SRCS
   p4c-multip4.cpp

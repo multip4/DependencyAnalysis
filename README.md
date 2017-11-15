@@ -21,8 +21,6 @@ ln -s [path_to_your_p4c-multip4] [~/p4/p4c/extensions/p4c-multip4]
 
 4. Build it!
 
-## To-do
+## Contact Info
 
-1. Analyze action inside!
-
-2. How to use `LOG()` instead of `std::cout`? 
+- Seungbin Song ([sbsong@postech.ac.kr](mailto:sbsong@postech.ac.kr))

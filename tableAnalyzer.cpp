@@ -1,4 +1,6 @@
-//seungbin
+/* 
+Written by Seungbin Song 
+*/
 
 
 #include "tableAnalyzer.h"

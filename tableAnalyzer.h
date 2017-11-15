@@ -1,4 +1,6 @@
-//seungbin
+/*
+Written by Seungbin Song
+*/
 
 #ifndef MULTIP4_TABLE_ANALYZER_H
 #define MULTIP4_TABLE_ANALYZER_H
