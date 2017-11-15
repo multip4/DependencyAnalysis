@@ -11,8 +11,64 @@
 
 namespace multip4 {
 
+
+  static Expressions unionExpressions (Expressions e1, Expressions e2) {
+    Expressions result;
+    result.resize((int)(e2.size()));
+    std::copy( e2.begin(), e2.end(), result.begin());
+    
+    for (auto i : e1) {
+      if (e2.end() == std::find (e2.begin(), e2.end(), i))
+        result.push_back(i);
+    }
+    return result;
+  }
+
+  static void printExpressions (Expressions es) {
+    std::cout << "Expressions: ";
+    for (auto e : es) {
+      e->dbprint(std::cout);
+      std::cout << " | ";
+    }
+    std::cout << std::endl;
+  }
+
   TableAnalyzer::TableAnalyzer(P4::ReferenceMap *refMap, P4::TypeMap *typeMap)
-    : refMap(refMap), typeMap(typeMap) {}
+    : refMap(refMap), typeMap(typeMap), curAction(nullptr) {}
+
+  void TableAnalyzer::setCurrentAction(const IR::P4Action *action) {
+    curAction = action;
+  }
+
+  void TableAnalyzer::clearCurrentAction() {
+    curAction = nullptr;
+  }
+
+  Expressions TableAnalyzer::findId(const IR::Expression *expr) {
+    if (expr->is<IR::Operation_Binary>()) {
+      const IR::Operation_Binary *bexpr = expr->to<IR::Operation_Binary>();
+      Expressions lresult = findId(bexpr->left);
+      Expressions rresult = findId(bexpr->right);
+      return unionExpressions(lresult, rresult);
+    }
+    if (expr->is<IR::Operation_Ternary>()) {
+      const IR::Operation_Ternary *texpr = expr->to<IR::Operation_Ternary>();
+      Expressions e0r = findId(texpr->e0);
+      Expressions e1r = findId(texpr->e1);
+      Expressions e2r = findId(texpr->e2);
+      return unionExpressions(unionExpressions(e0r, e1r), e2r);
+    }
+    if (expr->is<IR::Member>()) {
+      Expressions result = {expr};
+      return result;
+    }
+    if (expr->is<IR::AttribLocal>()) {
+      Expressions result = {expr};
+      return result;
+    }
+    Expressions v = {};
+    return v;
+  }
 
   bool TableAnalyzer::preorder(const IR::PackageBlock *block) {
     for (auto it : block->constantValue) {
@@ -105,6 +161,26 @@ namespace multip4 {
     std::cout << "    Assignment: ";
     statement->dbprint(std::cout);
     std::cout << std::endl;
+
+    if (curAction == nullptr)
+      std::cout << "current action is nullptr." << std::endl;
+    else {
+      std::cout << "    Left expression: ";
+      statement->left->dbprint(std::cout);
+      std::cout << std::endl;
+      auto l = statement->left->to<IR::Member>();
+      if (l == nullptr) {
+        std::cout << "    Left expression is not a STH." << std::endl;
+      } else {
+        std::cout << "      You find a member " << l->member.name << std::endl;
+        std::cout << "      You find an expression ";
+        l->expr->dbprint(std::cout);
+        std::cout << std::endl;
+      }
+      std::cout << "    Right expressions" << std::endl;
+      std::cout << "      ";
+      printExpressions(findId(statement->right));
+    }
     return false;
   }
 
@@ -150,7 +226,9 @@ namespace multip4 {
 
   bool TableAnalyzer::preorder(const IR::P4Action *action) {
     std::cout << "  P4Action: " << action->toString() << std::endl;
+    setCurrentAction(action);
     visit(action->body);
+    clearCurrentAction();
     return false;
   }
 

@@ -14,9 +14,16 @@ namespace P4 {
 
 namespace multip4 {
 
+  typedef std::vector<const IR::Expression *> Expressions;
+
   class TableAnalyzer : public Inspector {
     public:
       TableAnalyzer(P4::ReferenceMap *refMap, P4::TypeMap *typeMap);
+
+      void setCurrentAction(const IR::P4Action *action);
+      void clearCurrentAction();
+
+      Expressions findId(const IR::Expression *expr);
 
       bool preorder(const IR::PackageBlock *block) override;
       bool preorder(const IR::ControlBlock *block) override;
@@ -35,6 +42,7 @@ namespace multip4 {
 
     private:
       P4::ReferenceMap *refMap; P4::TypeMap *typeMap;
+      const IR::P4Action *curAction;
   };
 
 } //namespace multip4
