@@ -16,7 +16,16 @@ namespace P4 {
 
 namespace multip4 {
 
-  typedef std::vector<const IR::Expression *> Expressions;
+  typedef std::set<const IR::Expression *> Expressions;
+
+  class ActionSet {
+    public:
+      const IR::P4Action *action;
+      Expressions def;
+      Expressions use;
+
+      ActionSet();
+  };
 
   class TableAnalyzer : public Inspector {
     public:
@@ -44,7 +53,7 @@ namespace multip4 {
 
     private:
       P4::ReferenceMap *refMap; P4::TypeMap *typeMap;
-      const IR::P4Action *curAction;
+      ActionSet *curAction;
   };
 
 } //namespace multip4
