@@ -137,6 +137,33 @@ namespace multip4 {
     return false;
   }
 
+  void TableAnalyzer::visitExterns(const P4::MethodInstance *instance) {
+    auto args = instance->expr->arguments;
+    auto params = instance->getActualParameters();
+    std::cout << "    Extern: ";
+    instance->expr->method->dbprint(std::cout);
+    std::cout << std::endl;
+    if (args->size() != params->size()) {
+      std::cout << "ERROR: the number of args / params does not match" << std::endl;
+      return;
+    }
+
+    for (unsigned i = 0; i < args->size(); i++) {
+      auto a = (*args)[i];
+      auto p = params->getParameter(i);
+      if (p->hasOut()){
+        std::cout << "      OUT: ";
+        a->dbprint(std::cout);
+      } else {
+        std::cout << "      IN:  ";
+        a->dbprint(std::cout);
+      }
+      if (a->is<IR::Member>())
+        std::cout << " (member)";
+      std::cout << std::endl;
+    }
+  }
+
   bool TableAnalyzer::preorder(const IR::MethodCallStatement *statement) {
     auto instance = P4::MethodInstance::resolve(statement->methodCall, refMap, typeMap);
     if(instance->is<P4::ApplyMethod>()) {
@@ -161,29 +188,22 @@ namespace multip4 {
           BUG("Unsupported apply method: %1%", instance);
       }
     }
+    else if (curAction->action != nullptr && instance->is<P4::ExternFunction>()) {
+      visitExterns(instance);
+    }
+    else if (curAction->action != nullptr && instance->is<P4::ExternMethod>()) {
+      visitExterns(instance);
+    }
     return false;
   }
 
   bool TableAnalyzer::preorder(const IR::AssignmentStatement *statement) {
-    //std::cout << "    Assignment: ";
-    //statement->dbprint(std::cout);
-    //std::cout << std::endl;
-
-    if (curAction == nullptr)
-      std::cout << "current action is nullptr." << std::endl;
-    else {
-      //std::cout << "    Left expression: ";
-      //statement->left->dbprint(std::cout);
-      //std::cout << std::endl;
+    if (curAction->action != nullptr) {
       if (statement->left->is<IR::Member>()) {
         curAction->def = unionExpressions(curAction->def, {statement->left});
       } else if (statement->left->is<IR::AttribLocal>()) {
         curAction->def = unionExpressions(curAction->def, {statement->left});
       }
-
-      //std::cout << "    Right expressions:" << std::endl;
-      //std::cout << "      ";
-      //printExpressions(findId(statement->right));
       curAction->use = unionExpressions(curAction->use, 
           subtractExpressions(findId(statement->right), curAction->def));
     }

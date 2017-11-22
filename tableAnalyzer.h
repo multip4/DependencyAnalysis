@@ -35,7 +35,8 @@ namespace multip4 {
       void clearCurrentAction();
 
       Expressions findId(const IR::Expression *expr);
-
+      void visitExterns(const P4::MethodInstance *instance);
+      
       bool preorder(const IR::PackageBlock *block) override;
       bool preorder(const IR::ControlBlock *block) override;
       bool preorder(const IR::P4Control *cont) override;
