@@ -15,21 +15,26 @@ namespace multip4 {
 
   static Expressions unionExpressions (const Expressions& e1, const Expressions& e2) {
     Expressions result = e1;
-    result.insert(e2.cbegin(), e2.cend());
+    for (auto i2 : e2) {
+      result.insert(i2);
+    }
     return result;
   }
 
   static Expressions subtractExpressions (const Expressions& e1, const Expressions& e2) {
     Expressions result = e1;
-    for (auto i : e2)
-      result.erase(i);
+    for (auto i2 : e2) {
+      result.erase(i2);
+    }
     return result;
   }
 
   static void printExpressions (Expressions es) {
+    std::cout << std::endl;
     for (auto e : es) {
+      std::cout << "    ";
       e->dbprint(std::cout);
-      std::cout << " | ";
+      std::cout << std::endl;
     }
     std::cout << std::endl;
   }
@@ -52,6 +57,17 @@ namespace multip4 {
   }
 
   Expressions TableAnalyzer::findId(const IR::Expression *expr) {
+    if (expr->is<IR::ListExpression>()) {
+      auto exprList = expr->to<IR::ListExpression>()->components;
+      if (exprList.empty()) {
+        return {};
+      } else {
+        auto lastExpr = exprList.back();
+        exprList.pop_back();
+        const IR::Expression *rest = new IR::ListExpression(exprList);
+        return unionExpressions(findId(lastExpr), findId(rest));
+      }
+    }
     if (expr->is<IR::Operation_Binary>()) {
       const IR::Operation_Binary *bexpr = expr->to<IR::Operation_Binary>();
       Expressions lresult = findId(bexpr->left);
@@ -65,9 +81,13 @@ namespace multip4 {
       Expressions e2r = findId(texpr->e2);
       return unionExpressions(unionExpressions(e0r, e1r), e2r);
     }
-    if (expr->is<IR::Member>()) {
-      Expressions result = {expr};
-      return result;
+    if (expr->is<IR::Operation_Unary>()) {
+      if (expr->is<IR::Member>()) {
+        Expressions result = {expr};
+        return result;
+      } else {
+      return findId(expr->to<IR::Operation_Unary>()->expr);
+      }
     }
     if (expr->is<IR::AttribLocal>()) {
       Expressions result = {expr};
@@ -140,6 +160,9 @@ namespace multip4 {
   void TableAnalyzer::visitExterns(const P4::MethodInstance *instance) {
     auto args = instance->expr->arguments;
     auto params = instance->getActualParameters();
+    Expressions inExprs = {};
+    Expressions outExprs = {};
+    
     std::cout << "    Extern: ";
     instance->expr->method->dbprint(std::cout);
     std::cout << std::endl;
@@ -154,13 +177,19 @@ namespace multip4 {
       if (p->hasOut()){
         std::cout << "      OUT: ";
         a->dbprint(std::cout);
+        outExprs = unionExpressions(findId(a), outExprs);
       } else {
         std::cout << "      IN:  ";
         a->dbprint(std::cout);
+        inExprs = unionExpressions(findId(a), inExprs);
       }
-      if (a->is<IR::Member>())
-        std::cout << " (member)";
       std::cout << std::endl;
+    }
+
+    if (curAction->action != nullptr) {
+      curAction->def = unionExpressions(curAction->def, outExprs);
+      curAction->use = unionExpressions(curAction->use,
+          subtractExpressions(inExprs, curAction->def));
     }
   }
 
@@ -189,10 +218,10 @@ namespace multip4 {
       }
     }
     else if (curAction->action != nullptr && instance->is<P4::ExternFunction>()) {
-      visitExterns(instance);
+      //visitExterns(instance);
     }
     else if (curAction->action != nullptr && instance->is<P4::ExternMethod>()) {
-      visitExterns(instance);
+      //visitExterns(instance);
     }
     return false;
   }
@@ -255,7 +284,7 @@ namespace multip4 {
     setCurrentAction(action);
     visit(action->body);
     std::cout << "  Def: ";
-    printExpressions(curAction->def);
+    printExpressions(unionExpressions(curAction->def, curAction->def));
     std::cout << "  Use: ";
     printExpressions(curAction->use);
     clearCurrentAction();
