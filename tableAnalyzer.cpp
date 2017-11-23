@@ -13,30 +13,35 @@ Written by Seungbin Song
 
 namespace multip4 {
 
-  static Expressions unionExpressions (const Expressions& e1, const Expressions& e2) {
-    Expressions result = e1;
+  static ExprSet unionExprSet (const ExprSet& e1, const ExprSet& e2) {
+    ExprSet result = e1;
     for (auto i2 : e2) {
       result.insert(i2);
     }
     return result;
   }
 
-  static Expressions subtractExpressions (const Expressions& e1, const Expressions& e2) {
-    Expressions result = e1;
+  static ExprSet subtractExprSet (const ExprSet& e1, const ExprSet& e2) {
+    ExprSet result = e1;
     for (auto i2 : e2) {
       result.erase(i2);
     }
     return result;
   }
 
-  static void printExpressions (Expressions es) {
+  static void printExprSet (ExprSet es) {
     std::cout << std::endl;
     for (auto e : es) {
-      std::cout << "    ";
-      e->dbprint(std::cout);
-      std::cout << std::endl;
+      std::cout << "      " << e << std::endl;
     }
-    std::cout << std::endl;
+  }
+
+  static std::string expr2string (const IR::Expression* e) {
+    std::ostringstream s;
+    s << e;
+    std::string result = s.str();
+    result.pop_back();
+    return result;
   }
 
   ActionSet::ActionSet() : action(nullptr), def({}), use({}) {}
@@ -56,7 +61,7 @@ namespace multip4 {
     curAction->use = {};
   }
 
-  Expressions TableAnalyzer::findId(const IR::Expression *expr) {
+  ExprSet TableAnalyzer::findId(const IR::Expression *expr) {
     if (expr->is<IR::ListExpression>()) {
       auto exprList = expr->to<IR::ListExpression>()->components;
       if (exprList.empty()) {
@@ -65,35 +70,40 @@ namespace multip4 {
         auto lastExpr = exprList.back();
         exprList.pop_back();
         const IR::Expression *rest = new IR::ListExpression(exprList);
-        return unionExpressions(findId(lastExpr), findId(rest));
+        return unionExprSet(findId(lastExpr), findId(rest));
       }
     }
     if (expr->is<IR::Operation_Binary>()) {
       const IR::Operation_Binary *bexpr = expr->to<IR::Operation_Binary>();
-      Expressions lresult = findId(bexpr->left);
-      Expressions rresult = findId(bexpr->right);
-      return unionExpressions(lresult, rresult);
+      ExprSet lresult = findId(bexpr->left);
+      ExprSet rresult = findId(bexpr->right);
+      return unionExprSet(lresult, rresult);
     }
     if (expr->is<IR::Operation_Ternary>()) {
       const IR::Operation_Ternary *texpr = expr->to<IR::Operation_Ternary>();
-      Expressions e0r = findId(texpr->e0);
-      Expressions e1r = findId(texpr->e1);
-      Expressions e2r = findId(texpr->e2);
-      return unionExpressions(unionExpressions(e0r, e1r), e2r);
+      ExprSet e0r = findId(texpr->e0);
+      ExprSet e1r = findId(texpr->e1);
+      ExprSet e2r = findId(texpr->e2);
+      return unionExprSet(unionExprSet(e0r, e1r), e2r);
     }
     if (expr->is<IR::Operation_Unary>()) {
       if (expr->is<IR::Member>()) {
-        Expressions result = {expr};
-        return result;
+        auto m = expr->to<IR::Member>();
+        if (m->expr->is<IR::TypeNameExpression>()) {
+          return {};
+        } else {
+          ExprSet result = {expr2string(expr)};
+          return result;
+        }
       } else {
       return findId(expr->to<IR::Operation_Unary>()->expr);
       }
     }
     if (expr->is<IR::AttribLocal>()) {
-      Expressions result = {expr};
+      ExprSet result = {expr2string(expr)};
       return result;
     }
-    Expressions v = {};
+    ExprSet v = {};
     return v;
   }
 
@@ -101,7 +111,7 @@ namespace multip4 {
     for (auto it : block->constantValue) {
       if(it.second->is<IR::ControlBlock>()) {
         auto name = it.second->to<IR::ControlBlock>()->container->name;
-        std::cout << "Analyzing top-level control " << name << std::endl;
+        std::cout << "\nAnalyzing top-level control " << name << std::endl;
         visit(it.second->getNode());
       }
     }
@@ -160,12 +170,10 @@ namespace multip4 {
   void TableAnalyzer::visitExterns(const P4::MethodInstance *instance) {
     auto args = instance->expr->arguments;
     auto params = instance->getActualParameters();
-    Expressions inExprs = {};
-    Expressions outExprs = {};
+    ExprSet inExprs = {};
+    ExprSet outExprs = {};
     
-    std::cout << "    Extern: ";
-    instance->expr->method->dbprint(std::cout);
-    std::cout << std::endl;
+    //std::cout << "    Extern: " << instance->expr->method << std::endl;
     if (args->size() != params->size()) {
       std::cout << "ERROR: the number of args / params does not match" << std::endl;
       return;
@@ -175,21 +183,18 @@ namespace multip4 {
       auto a = (*args)[i];
       auto p = params->getParameter(i);
       if (p->hasOut()){
-        std::cout << "      OUT: ";
-        a->dbprint(std::cout);
-        outExprs = unionExpressions(findId(a), outExprs);
+        //std::cout << "      OUT: " << a << std::endl;
+        outExprs = unionExprSet(findId(a), outExprs);
       } else {
-        std::cout << "      IN:  ";
-        a->dbprint(std::cout);
-        inExprs = unionExpressions(findId(a), inExprs);
+        //std::cout << "      IN:  " << a << std::endl;
+        inExprs = unionExprSet(findId(a), inExprs);
       }
-      std::cout << std::endl;
     }
 
     if (curAction->action != nullptr) {
-      curAction->def = unionExpressions(curAction->def, outExprs);
-      curAction->use = unionExpressions(curAction->use,
-          subtractExpressions(inExprs, curAction->def));
+      curAction->def = unionExprSet(curAction->def, outExprs);
+      curAction->use = unionExprSet(curAction->use,
+          subtractExprSet(inExprs, curAction->def));
     }
   }
 
@@ -218,10 +223,10 @@ namespace multip4 {
       }
     }
     else if (curAction->action != nullptr && instance->is<P4::ExternFunction>()) {
-      //visitExterns(instance);
+      visitExterns(instance);
     }
     else if (curAction->action != nullptr && instance->is<P4::ExternMethod>()) {
-      //visitExterns(instance);
+      visitExterns(instance);
     }
     return false;
   }
@@ -229,12 +234,12 @@ namespace multip4 {
   bool TableAnalyzer::preorder(const IR::AssignmentStatement *statement) {
     if (curAction->action != nullptr) {
       if (statement->left->is<IR::Member>()) {
-        curAction->def = unionExpressions(curAction->def, {statement->left});
+        curAction->def = unionExprSet(curAction->def, {expr2string(statement->left)});
       } else if (statement->left->is<IR::AttribLocal>()) {
-        curAction->def = unionExpressions(curAction->def, {statement->left});
+        curAction->def = unionExprSet(curAction->def, {expr2string(statement->left)});
       }
-      curAction->use = unionExpressions(curAction->use, 
-          subtractExpressions(findId(statement->right), curAction->def));
+      curAction->use = unionExprSet(curAction->use, 
+          subtractExprSet(findId(statement->right), curAction->def));
     }
     return false;
   }
@@ -283,10 +288,10 @@ namespace multip4 {
     std::cout << "  P4Action: " << action->toString() << std::endl;
     setCurrentAction(action);
     visit(action->body);
-    std::cout << "  Def: ";
-    printExpressions(unionExpressions(curAction->def, curAction->def));
-    std::cout << "  Use: ";
-    printExpressions(curAction->use);
+    std::cout << "    Def: ";
+    printExprSet(unionExprSet(curAction->def, curAction->def));
+    std::cout << "    Use: ";
+    printExprSet(curAction->use);
     clearCurrentAction();
     return false;
   }

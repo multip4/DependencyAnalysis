@@ -16,13 +16,13 @@ namespace P4 {
 
 namespace multip4 {
 
-  typedef std::set<const IR::Expression *> Expressions;
+  typedef std::set<std::string> ExprSet;
 
   class ActionSet {
     public:
       const IR::P4Action *action;
-      Expressions def;
-      Expressions use;
+      ExprSet def;
+      ExprSet use;
 
       ActionSet();
   };
@@ -34,7 +34,7 @@ namespace multip4 {
       void setCurrentAction(const IR::P4Action *action);
       void clearCurrentAction();
 
-      Expressions findId(const IR::Expression *expr);
+      ExprSet findId(const IR::Expression *expr);
       void visitExterns(const P4::MethodInstance *instance);
       
       bool preorder(const IR::PackageBlock *block) override;
