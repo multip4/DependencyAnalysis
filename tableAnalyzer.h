@@ -16,15 +16,23 @@ namespace P4 {
 
 namespace multip4 {
 
-  typedef std::set<std::string> ExprSet;
+  typedef std::set<cstring> ExprSet;
 
-  class ActionSet {
+  class Action {
     public:
       const IR::P4Action *action;
       ExprSet def;
       ExprSet use;
 
-      ActionSet();
+      Action();
+  };
+
+  typedef std::map<cstring, Action*> ActionMap;
+
+  class Table {
+    public:
+      ExprSet keys;
+      ActionMap actions;
   };
 
   class TableAnalyzer : public Inspector {
@@ -32,7 +40,8 @@ namespace multip4 {
       TableAnalyzer(P4::ReferenceMap *refMap, P4::TypeMap *typeMap);
 
       void setCurrentAction(const IR::P4Action *action);
-      void clearCurrentAction();
+      void saveCurrentAction();
+      void clearCurrentActionMap();
 
       ExprSet findId(const IR::Expression *expr);
       void visitExterns(const P4::MethodInstance *instance);
@@ -54,7 +63,9 @@ namespace multip4 {
 
     private:
       P4::ReferenceMap *refMap; P4::TypeMap *typeMap;
-      ActionSet *curAction;
+      Action *curAction;
+      ActionMap *curActionMap;
+      Table *curTable;
   };
 
 } //namespace multip4

@@ -36,18 +36,19 @@ namespace multip4 {
     }
   }
 
-  static std::string expr2string (const IR::Expression* e) {
-    std::ostringstream s;
-    s << e;
-    std::string result = s.str();
-    result.pop_back();
-    return result;
+  static void printTable (Table *table) {
+    for (auto k : table->keys)
+      std::cout << "    Key: " << k << std::endl;
+    for (auto a : table->actions)
+      std::cout << "    Action: " << a.first << std::endl;
   }
 
-  ActionSet::ActionSet() : action(nullptr), def({}), use({}) {}
+
+  Action::Action() : action(nullptr), def({}), use({}) {}
 
   TableAnalyzer::TableAnalyzer(P4::ReferenceMap *refMap, P4::TypeMap *typeMap)
-    : refMap(refMap), typeMap(typeMap), curAction(new ActionSet()) {}
+    : refMap(refMap), typeMap(typeMap), curAction(new Action()), 
+      curActionMap(new ActionMap()), curTable(new Table()){}
 
   void TableAnalyzer::setCurrentAction(const IR::P4Action *action) {
     curAction->action = action;
@@ -55,10 +56,14 @@ namespace multip4 {
     curAction->use = {};
   }
 
-  void TableAnalyzer::clearCurrentAction() {
-    curAction->action = nullptr;
-    curAction->def = {};
-    curAction->use = {};
+  void TableAnalyzer::saveCurrentAction() {
+    (*curActionMap)[curAction->action->toString()] = curAction;
+    curAction = new Action();
+  }
+
+  void TableAnalyzer::clearCurrentActionMap() {
+    delete(curActionMap);
+    curActionMap = new ActionMap();
   }
 
   ExprSet TableAnalyzer::findId(const IR::Expression *expr) {
@@ -92,7 +97,7 @@ namespace multip4 {
         if (m->expr->is<IR::TypeNameExpression>()) {
           return {};
         } else {
-          ExprSet result = {expr2string(expr)};
+          ExprSet result = {expr->toString()};
           return result;
         }
       } else {
@@ -100,7 +105,7 @@ namespace multip4 {
       }
     }
     if (expr->is<IR::AttribLocal>()) {
-      ExprSet result = {expr2string(expr)};
+      ExprSet result = {expr->toString()};
       return result;
     }
     ExprSet v = {};
@@ -113,6 +118,7 @@ namespace multip4 {
         auto name = it.second->to<IR::ControlBlock>()->container->name;
         std::cout << "\nAnalyzing top-level control " << name << std::endl;
         visit(it.second->getNode());
+        clearCurrentActionMap();
       }
     }
     return false;
@@ -234,9 +240,9 @@ namespace multip4 {
   bool TableAnalyzer::preorder(const IR::AssignmentStatement *statement) {
     if (curAction->action != nullptr) {
       if (statement->left->is<IR::Member>()) {
-        curAction->def = unionExprSet(curAction->def, {expr2string(statement->left)});
+        curAction->def = unionExprSet(curAction->def, {statement->left->toString()});
       } else if (statement->left->is<IR::AttribLocal>()) {
-        curAction->def = unionExprSet(curAction->def, {expr2string(statement->left)});
+        curAction->def = unionExprSet(curAction->def, {statement->left->toString()});
       }
       curAction->use = unionExprSet(curAction->use, 
           subtractExprSet(findId(statement->right), curAction->def));
@@ -253,13 +259,13 @@ namespace multip4 {
   }
 
   bool TableAnalyzer::preorder(const IR::P4Table *table) {
-    std::cout << "Table: " << table->controlPlaneName() << std::endl;
+    std::cout << "  P4Table: " << table->controlPlaneName() << std::endl;
 
     //Key
     const auto keys = table->getKey();
     if (keys != nullptr) {
       if (keys->keyElements.empty() == false) {
-        std::cout << "Keys:" << std::endl;
+        //std::cout << "Keys:" << std::endl;
         for (const auto key : keys->keyElements)
           visit(key);
       }
@@ -269,18 +275,24 @@ namespace multip4 {
     const auto actions = table->getActionList();
     if (actions != nullptr) {
       if (actions->actionList.empty() == false) {
-        std::cout << "Actions:" << std::endl;
+        //std::cout << "Actions:" << std::endl;
         for (const auto action : actions->actionList)
           visit(action);
       }
     }
 
-
+    printTable(curTable);
+    curTable = new Table();
     return false;
   }
 
   bool TableAnalyzer::preorder(const IR::ActionListElement *action) {
-    std::cout << "  Action: " << action->toString() << std::endl;
+    auto a = refMap->getDeclaration(action->getPath(), true)->to<IR::P4Action>();
+    //std::cout << "  ActionListElement: " << a->toString() << std::endl;
+    
+    if ((*curActionMap)[a->toString()] != nullptr) {
+      curTable->actions[a->toString()] = (*curActionMap)[a->toString()];
+    }
     return false;
   }
 
@@ -289,17 +301,18 @@ namespace multip4 {
     setCurrentAction(action);
     visit(action->body);
     std::cout << "    Def: ";
-    printExprSet(unionExprSet(curAction->def, curAction->def));
+    printExprSet(curAction->def);
     std::cout << "    Use: ";
     printExprSet(curAction->use);
-    clearCurrentAction();
+    saveCurrentAction();
     return false;
   }
 
   bool TableAnalyzer::preorder(const IR::KeyElement *key) {
-    if (key->expression != nullptr)
-      std::cout << "  Key: " << key->expression->toString() << std::endl;
-
+    if (key->expression != nullptr) {
+      //std::cout << "  Key: " << key->expression->toString() << std::endl;
+      curTable->keys.insert(key->expression->toString());
+    }
     return false;
   }
 
