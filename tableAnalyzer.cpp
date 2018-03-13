@@ -51,9 +51,35 @@ namespace multip4 {
 
   Action::Action() : action(nullptr), def({}), use({}) {}
 
+  Dependency::Dependency(Table* _first, Table* _second, DependencyType _type, 
+      bool _isTableDependency, cstring _dataName) {
+    firstTable = _first;
+    secondTable = _second;
+    type = _type;
+    isTableDependency = _isTableDependency;
+    dataName = _dataName;
+  }
+
+  void Dependency::print() {
+    std::cout << "Table1: " << firstTable->name << ", ";
+    std::cout << "Table2: " << secondTable->name << " ";
+    if(isTableDependency)
+      std::cout << "[Table ";
+    else 
+      std::cout << "[Action ";
+    if(type == DependencyType::UseDef)
+      std::cout << "Use-Def] ";
+    else if(type == DependencyType::DefUse)
+      std::cout << "Def-Use] ";
+    else 
+      std::cout << "Def-Def] ";
+    std::cout << "id: " << dataName << std::endl;
+  }
+
   TableAnalyzer::TableAnalyzer(P4::ReferenceMap *refMap, P4::TypeMap *typeMap)
     : refMap(refMap), typeMap(typeMap), curAction(new Action()), 
-      curActionMap(new ActionMap()), curTable(new Table()), tableStack(new TableStack()){}
+      curActionMap(new ActionMap()), curTable(new Table()), 
+      tableStack(new TableStack()), dependencies(new Dependencies()){}
 
   void TableAnalyzer::setCurrentAction(const IR::P4Action *action) {
     curAction->action = action;
@@ -117,6 +143,46 @@ namespace multip4 {
     return v;
   }
 
+  void TableAnalyzer::findDependencies() {
+    if (std::find(tableStack->begin(), tableStack->end(), curTable) != tableStack->end()) {
+      std::cout << "\n[ERROR] curTable already exists in the tableStack" << std::endl;
+      return;
+    }
+
+    //find table dependency
+    for (auto t = tableStack->rbegin(); t != tableStack->rend(); ++t) {
+      for (auto a : (*t)->actions) {
+        for (auto k : curTable->keys) {
+          if (a.second->def.find(k) != a.second->def.end()) {
+            dependencies->push_back(Dependency(*t, curTable, DependencyType::DefUse, true, k));
+          }
+        }
+      }
+    }
+
+    //find action dependency
+    for (auto t = tableStack->rbegin(); t != tableStack->rend(); ++t) {
+      for (auto firstAction : (*t)->actions) {
+        for (auto secondAction : curTable->actions) {
+          for (auto d : secondAction.second->def) {
+            if (firstAction.second->def.find(d) != firstAction.second->def.end()) {
+              dependencies->push_back(Dependency(*t, curTable, DependencyType::DefDef, false, d));
+            }
+            if (firstAction.second->use.find(d) != firstAction.second->use.end()) {
+              dependencies->push_back(Dependency(*t, curTable, DependencyType::UseDef, false, d));
+            }
+          }
+          for (auto u : secondAction.second->use) {
+            if (firstAction.second->def.find(u) != firstAction.second->def.end()) {
+              dependencies->push_back(Dependency(*t, curTable, DependencyType::DefUse, false, u));
+            }
+          }
+        }
+      }
+    }
+
+  }
+
   bool TableAnalyzer::preorder(const IR::PackageBlock *block) {
     for (auto it : block->constantValue) {
       if(it.second->is<IR::ControlBlock>()) {
@@ -126,10 +192,13 @@ namespace multip4 {
         clearCurrentActionMap();
         
         std::cout << "Printing Tables..." << std::endl;
-        for(auto i = tableStack->begin(); i != tableStack->end(); ++i) {
+        for(auto i = tableStack->begin(); i != tableStack->end(); ++i) 
           (*i)->print();
-        }
+        std::cout << "Printing Dependencies..." << std::endl;
+        for(auto i = dependencies->begin(); i != dependencies->end(); ++i) 
+          (*i).print();
         tableStack = new TableStack();
+        dependencies = new Dependencies();
       }
     }
 
@@ -308,6 +377,7 @@ namespace multip4 {
     }
 
     curTable->print();
+    findDependencies();
     tableStack->push_back(curTable);
     curTable = new Table();
     return false;

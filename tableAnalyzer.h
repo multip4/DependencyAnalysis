@@ -40,7 +40,25 @@ namespace multip4 {
       void print();
   };
 
+
+  typedef enum DependencyType { UseDef, DefUse, DefDef } DependencyType;
+
+  class Dependency {
+    public:
+      Table* firstTable;
+      Table* secondTable;
+      DependencyType type;
+      bool isTableDependency;
+      cstring dataName;
+
+      Dependency(Table* _first, Table* _second, DependencyType _type, 
+          bool _isTableDependency, cstring _dataName);
+
+      void print();
+  };
+
   typedef std::vector<Table*> TableStack;
+  typedef std::vector<Dependency> Dependencies;
 
   class TableAnalyzer : public Inspector {
     public:
@@ -49,6 +67,7 @@ namespace multip4 {
       void setCurrentAction(const IR::P4Action *action);
       void saveCurrentAction();
       void clearCurrentActionMap();
+      void findDependencies();
 
       ExprSet findId(const IR::Expression *expr);
       void visitExterns(const P4::MethodInstance *instance);
@@ -74,6 +93,7 @@ namespace multip4 {
       ActionMap *curActionMap;
       Table *curTable;
       TableStack *tableStack;
+      Dependencies *dependencies;
   };
 
 } //namespace multip4
