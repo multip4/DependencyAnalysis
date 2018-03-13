@@ -51,9 +51,17 @@ class Graphs {
         CONTROL,
         OTHER
     };
+    enum class EdgeType {
+      TABLE,
+      ACTION
+    };
     struct Vertex {
         cstring name;
         VertexType type;
+    };
+    struct Edge {
+      cstring name;
+      EdgeType type;
     };
 
     // The boost graph support for graphviz subgraphs is not very intuitive. In
@@ -68,7 +76,7 @@ class Graphs {
     using edgeProperties =
         boost::property<boost::edge_attribute_t, GraphvizAttributes,
         boost::property<boost::edge_name_t, cstring,
-        boost::property<boost::edge_index_t, int> > >;
+        boost::property<boost::edge_index_t, int, Edge> > >;
     using graphProperties =
         boost::property<boost::graph_name_t, cstring,
         boost::property<boost::graph_graph_attribute_t, GraphvizAttributes,
@@ -82,7 +90,7 @@ class Graphs {
 
 
     vertex_t add_vertex(const cstring &name, VertexType type);
-    void add_edge(const vertex_t &from, const vertex_t &to, const cstring &name);
+    void add_edge(const vertex_t &from, const vertex_t &to, const cstring &name, EdgeType type);
     void writeGraphToFile(const cstring &name);
 
     class GraphAttributeSetter {
@@ -99,8 +107,10 @@ class Graphs {
             }
             auto edges = boost::edges(g);
             for (auto eit = edges.first; eit != edges.second; ++eit) {
+                const auto &einfo = g[*eit];
                 auto attrs = boost::get(boost::edge_attribute, g);
-                attrs[*eit]["label"] = boost::get(boost::edge_name, g, *eit);
+                attrs[*eit]["label"] = einfo.name;
+                attrs[*eit]["style"] = edgeTypeGetStyle(einfo.type);
             }
         }
 
@@ -132,6 +142,17 @@ class Graphs {
             default:
                 return "";
             }
+        }
+
+        static cstring edgeTypeGetStyle(EdgeType type) {
+          switch (type) {
+            case EdgeType::TABLE:
+              return "solid";
+            default:
+              return "dashed";
+          }
+          BUG("unreachable");
+          return "";
         }
     };  // end class GraphAttributeSetter
 

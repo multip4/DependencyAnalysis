@@ -155,7 +155,7 @@ namespace multip4 {
         for (auto k : curTable->keys) {
           if (a.second->def.find(k) != a.second->def.end()) {
             dependencies->push_back(Dependency(*t, curTable, DependencyType::DefUse, true, k));
-            graph->add_edge((*t)->vertex, curTable->vertex, k);
+            graph->add_edge((*t)->vertex, curTable->vertex, k, Graphs::EdgeType::TABLE);
           }
         }
       }
@@ -168,17 +168,17 @@ namespace multip4 {
           for (auto d : secondAction.second->def) {
             if (firstAction.second->def.find(d) != firstAction.second->def.end()) {
               dependencies->push_back(Dependency(*t, curTable, DependencyType::DefDef, false, d));
-              graph->add_edge((*t)->vertex, curTable->vertex, d);
+              graph->add_edge((*t)->vertex, curTable->vertex, d, Graphs::EdgeType::ACTION);
             }
             if (firstAction.second->use.find(d) != firstAction.second->use.end()) {
               dependencies->push_back(Dependency(*t, curTable, DependencyType::UseDef, false, d));
-              graph->add_edge((*t)->vertex, curTable->vertex, d);
+              graph->add_edge((*t)->vertex, curTable->vertex, d, Graphs::EdgeType::ACTION);
             }
           }
           for (auto u : secondAction.second->use) {
             if (firstAction.second->def.find(u) != firstAction.second->def.end()) {
               dependencies->push_back(Dependency(*t, curTable, DependencyType::DefUse, false, u));
-              graph->add_edge((*t)->vertex, curTable->vertex, u);
+              graph->add_edge((*t)->vertex, curTable->vertex, u, Graphs::EdgeType::ACTION);
             }
           }
         }

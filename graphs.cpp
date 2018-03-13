@@ -34,9 +34,10 @@ Graphs::vertex_t Graphs::add_vertex(const cstring &name, VertexType type) {
     return g.local_to_global(v);
 }
 
-void Graphs::add_edge(const vertex_t &from, const vertex_t &to, const cstring &name) {
+void Graphs::add_edge(const vertex_t &from, const vertex_t &to, const cstring &name, EdgeType type) {
     auto ep = boost::add_edge(from, to, g);
-    boost::put(boost::edge_name, g, ep.first, name);
+    boost::put(&Edge::name, g, ep.first, name);
+    boost::put(&Edge::type, g, ep.first, type);
 }
 
 void Graphs::writeGraphToFile(const cstring &name) {
