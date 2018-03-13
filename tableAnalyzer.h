@@ -9,6 +9,8 @@ Written by Seungbin Song
 #include "ir/visitor.h"
 #include "frontends/p4/methodInstance.h"
 
+#include "graphs.h"
+
 namespace P4 {
   class ReferenceMap;
   class TypeMap;
@@ -36,6 +38,7 @@ namespace multip4 {
       cstring name;
       ExprSet keys;
       ActionMap actions;
+      Graphs::vertex_t vertex;
 
       void print();
   };
@@ -62,7 +65,7 @@ namespace multip4 {
 
   class TableAnalyzer : public Inspector {
     public:
-      TableAnalyzer(P4::ReferenceMap *refMap, P4::TypeMap *typeMap);
+      TableAnalyzer(P4::ReferenceMap *refMap, P4::TypeMap *typeMap, cstring file);
 
       void setCurrentAction(const IR::P4Action *action);
       void saveCurrentAction();
@@ -89,11 +92,13 @@ namespace multip4 {
 
     private:
       P4::ReferenceMap *refMap; P4::TypeMap *typeMap;
+      cstring fileName;
       Action *curAction;
       ActionMap *curActionMap;
       Table *curTable;
       TableStack *tableStack;
       Dependencies *dependencies;
+      Graphs *graph;
   };
 
 } //namespace multip4

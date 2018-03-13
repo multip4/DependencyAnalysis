@@ -3,10 +3,12 @@
 set (MULTIP4_SRCS
   p4c-multip4.cpp
   tableAnalyzer.cpp
+  graphs.cpp
   )
 
 set (MULTIP4_HDRS
   tableAnalyzer.h
+  graphs.h
   )
 
 add_cpplint_files(${CMAKE_CURRENT_SOURCE_DIR} "${MULTIP4_SRCS};${MULTIP4_HDRS}")

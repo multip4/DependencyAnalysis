@@ -4,6 +4,7 @@ Written by Seungbin Song
 
 
 #include "tableAnalyzer.h"
+#include "graphs.h"
 
 #include "frontends/p4/methodInstance.h"
 #include "frontends/p4/tableApply.h"
@@ -75,10 +76,10 @@ namespace multip4 {
     std::cout << "id: " << dataName << std::endl;
   }
 
-  TableAnalyzer::TableAnalyzer(P4::ReferenceMap *refMap, P4::TypeMap *typeMap)
-    : refMap(refMap), typeMap(typeMap), curAction(new Action()), 
+  TableAnalyzer::TableAnalyzer(P4::ReferenceMap *refMap, P4::TypeMap *typeMap, cstring file)
+    : refMap(refMap), typeMap(typeMap), fileName(file), curAction(new Action()), 
       curActionMap(new ActionMap()), curTable(new Table()), 
-      tableStack(new TableStack()), dependencies(new Dependencies()){}
+      tableStack(new TableStack()), dependencies(new Dependencies()), graph(new Graphs()){}
 
   void TableAnalyzer::setCurrentAction(const IR::P4Action *action) {
     curAction->action = action;
@@ -154,6 +155,7 @@ namespace multip4 {
         for (auto k : curTable->keys) {
           if (a.second->def.find(k) != a.second->def.end()) {
             dependencies->push_back(Dependency(*t, curTable, DependencyType::DefUse, true, k));
+            graph->add_edge((*t)->vertex, curTable->vertex, k);
           }
         }
       }
@@ -166,14 +168,17 @@ namespace multip4 {
           for (auto d : secondAction.second->def) {
             if (firstAction.second->def.find(d) != firstAction.second->def.end()) {
               dependencies->push_back(Dependency(*t, curTable, DependencyType::DefDef, false, d));
+              graph->add_edge((*t)->vertex, curTable->vertex, d);
             }
             if (firstAction.second->use.find(d) != firstAction.second->use.end()) {
               dependencies->push_back(Dependency(*t, curTable, DependencyType::UseDef, false, d));
+              graph->add_edge((*t)->vertex, curTable->vertex, d);
             }
           }
           for (auto u : secondAction.second->use) {
             if (firstAction.second->def.find(u) != firstAction.second->def.end()) {
               dependencies->push_back(Dependency(*t, curTable, DependencyType::DefUse, false, u));
+              graph->add_edge((*t)->vertex, curTable->vertex, u);
             }
           }
         }
@@ -196,8 +201,10 @@ namespace multip4 {
         std::cout << "Printing Dependencies..." << std::endl;
         for(auto i = dependencies->begin(); i != dependencies->end(); ++i) 
           (*i).print();
+        graph->writeGraphToFile(fileName + "." + name);
         tableStack = new TableStack();
         dependencies = new Dependencies();
+        graph = new Graphs();
       }
     }
 
@@ -234,6 +241,7 @@ namespace multip4 {
     statement->condition->dbprint(_stream);
     curTable->name = _stream.str();
     curTable->keys = findId(statement->condition);
+    curTable->vertex = graph->add_vertex(curTable->name, Graphs::VertexType::CONDITION);
     findDependencies();
     tableStack->push_back(curTable);
     curTable = new Table();
@@ -389,6 +397,7 @@ namespace multip4 {
     }
 
     curTable->print();
+    curTable->vertex = graph->add_vertex(curTable->name, Graphs::VertexType::TABLE);
     findDependencies();
     tableStack->push_back(curTable);
     curTable = new Table();
