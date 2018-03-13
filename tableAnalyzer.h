@@ -7,6 +7,7 @@ Written by Seungbin Song
 
 #include "ir/ir.h"
 #include "ir/visitor.h"
+#include "frontends/p4/methodInstance.h"
 
 namespace P4 {
   class ReferenceMap;
@@ -25,15 +26,21 @@ namespace multip4 {
       ExprSet use;
 
       Action();
+      void print();
   };
 
   typedef std::map<cstring, Action*> ActionMap;
 
   class Table {
     public:
+      cstring name;
       ExprSet keys;
       ActionMap actions;
+
+      void print();
   };
+
+  typedef std::vector<Table*> TableStack;
 
   class TableAnalyzer : public Inspector {
     public:
@@ -66,6 +73,7 @@ namespace multip4 {
       Action *curAction;
       ActionMap *curActionMap;
       Table *curTable;
+      TableStack *tableStack;
   };
 
 } //namespace multip4

@@ -29,18 +29,23 @@ namespace multip4 {
     return result;
   }
 
-  static void printExprSet (ExprSet es) {
-    std::cout << std::endl;
-    for (auto e : es) {
+  void Action::print() {
+     std::cout << "    Def: " << std::endl;
+    for(auto e : this->def)
       std::cout << "      " << e << std::endl;
-    }
-  }
+    std::cout << "    Use: " << std::endl;
+    for(auto e : this->use)
+      std::cout << "      " << e << std::endl;
+ }
 
-  static void printTable (Table *table) {
-    for (auto k : table->keys)
+  void Table::print () {
+    std::cout << "Name: " << this->name << std::endl;
+    for (auto k : this->keys)
       std::cout << "    Key: " << k << std::endl;
-    for (auto a : table->actions)
+    for (auto a : this->actions) {
       std::cout << "    Action: " << a.first << std::endl;
+      a.second->print();
+    }
   }
 
 
@@ -48,7 +53,7 @@ namespace multip4 {
 
   TableAnalyzer::TableAnalyzer(P4::ReferenceMap *refMap, P4::TypeMap *typeMap)
     : refMap(refMap), typeMap(typeMap), curAction(new Action()), 
-      curActionMap(new ActionMap()), curTable(new Table()){}
+      curActionMap(new ActionMap()), curTable(new Table()), tableStack(new TableStack()){}
 
   void TableAnalyzer::setCurrentAction(const IR::P4Action *action) {
     curAction->action = action;
@@ -119,8 +124,16 @@ namespace multip4 {
         std::cout << "\nAnalyzing top-level control " << name << std::endl;
         visit(it.second->getNode());
         clearCurrentActionMap();
+        
+        std::cout << "Printing Tables..." << std::endl;
+        for(auto i = tableStack->begin(); i != tableStack->end(); ++i) {
+          (*i)->print();
+        }
+        tableStack = new TableStack();
       }
     }
+
+
     return false;
   }
 
@@ -148,10 +161,21 @@ namespace multip4 {
   }
 
   bool TableAnalyzer::preorder(const IR::IfStatement *statement) {
+    int size = (int)tableStack->size();
+    TableStack *savedTableStack = new TableStack();
+    savedTableStack->resize(size);
+    std::copy(tableStack->begin(),tableStack->end(),savedTableStack->begin());
     visit(statement->ifTrue);
     if(statement->ifFalse != nullptr) {
+      if (*savedTableStack != *tableStack) {
+        TableStack *tmp = tableStack;
+        tableStack = savedTableStack;
+        savedTableStack = tmp;
+      }
       visit(statement->ifFalse);
+      tableStack->insert(tableStack->end(), savedTableStack->begin()+size, savedTableStack->end());
     }
+
     return false;
   }
 
@@ -259,7 +283,9 @@ namespace multip4 {
   }
 
   bool TableAnalyzer::preorder(const IR::P4Table *table) {
+    //Name
     std::cout << "  P4Table: " << table->controlPlaneName() << std::endl;
+    curTable->name = table->controlPlaneName();
 
     //Key
     const auto keys = table->getKey();
@@ -281,7 +307,8 @@ namespace multip4 {
       }
     }
 
-    printTable(curTable);
+    curTable->print();
+    tableStack->push_back(curTable);
     curTable = new Table();
     return false;
   }
@@ -300,10 +327,6 @@ namespace multip4 {
     std::cout << "  P4Action: " << action->toString() << std::endl;
     setCurrentAction(action);
     visit(action->body);
-    std::cout << "    Def: ";
-    printExprSet(curAction->def);
-    std::cout << "    Use: ";
-    printExprSet(curAction->use);
     saveCurrentAction();
     return false;
   }
