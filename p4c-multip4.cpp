@@ -9,6 +9,7 @@ Written by Seungbin Song
 #include "lib/gc.h"
 #include "lib/crash.h"
 #include "lib/nullstream.h"
+#include "frontends/common/applyOptionsPragmas.h"
 #include "frontends/common/parseInput.h"
 #include "frontends/p4/evaluator/evaluator.h"
 #include "frontends/p4/frontend.h"
@@ -18,6 +19,8 @@ Written by Seungbin Song
 namespace multip4 {
   
   class Options : public CompilerOptions {};
+
+  using Multip4Context = P4CContextWithOptions<Options>;
 
   class MidEnd : public PassManager {
     public:
@@ -46,12 +49,12 @@ namespace multip4 {
 
 } //namespace multip4
 
-
 int main(int argc, char *const argv[]) {
 	setup_gc_logging();
   setup_signals();
 
-  multip4::Options options;
+  AutoCompileContext autoMultip4Context(new ::multip4::Multip4Context);
+  auto& options = ::multip4::Multip4Context::get().options();
   options.langVersion = CompilerOptions::FrontendVersion::P4_16;
   options.compilerVersion = "0.0.1";
 
@@ -67,6 +70,9 @@ int main(int argc, char *const argv[]) {
     return 1;
 
   try {
+    P4::P4COptionPragmaParser optionsPragmaParser;
+    program->apply(P4::ApplyOptionsPragmas(optionsPragmaParser));
+
     P4::FrontEnd fe;
     fe.addDebugHook(hook);
     program = fe.run(options, program);
