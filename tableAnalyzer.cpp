@@ -48,7 +48,6 @@ namespace multip4 {
     }
   }
 
-
   Action::Action() : action(nullptr), def({}), use({}) {}
 
   Dependency::Dependency(Table* _first, Table* _second, DependencyType _type, 
@@ -230,11 +229,22 @@ namespace multip4 {
   }
 
   bool TableAnalyzer::preorder(const IR::IfStatement *statement) {
+    //Insert if statement as a table
+    Table *ifTable = new Table();
+    std::ostringstream _stream;
+    statement->condition->dbprint(_stream);
+    ifTable->name = _stream.str();
+    ifTable->keys = findId(statement->condition);
+    tableStack->push_back(ifTable);
+
+    //Copy the current tableStack
     int size = (int)tableStack->size();
     TableStack *savedTableStack = new TableStack();
     savedTableStack->resize(size);
     std::copy(tableStack->begin(),tableStack->end(),savedTableStack->begin());
     visit(statement->ifTrue);
+
+    //Restore tableStack
     if(statement->ifFalse != nullptr) {
       if (*savedTableStack != *tableStack) {
         TableStack *tmp = tableStack;
@@ -242,6 +252,7 @@ namespace multip4 {
         savedTableStack = tmp;
       }
       visit(statement->ifFalse);
+      //Merge tableStack of true and false
       tableStack->insert(tableStack->end(), savedTableStack->begin()+size, savedTableStack->end());
     }
 
