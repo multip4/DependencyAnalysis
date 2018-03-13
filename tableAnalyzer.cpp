@@ -230,12 +230,13 @@ namespace multip4 {
 
   bool TableAnalyzer::preorder(const IR::IfStatement *statement) {
     //Insert if statement as a table
-    Table *ifTable = new Table();
     std::ostringstream _stream;
     statement->condition->dbprint(_stream);
-    ifTable->name = _stream.str();
-    ifTable->keys = findId(statement->condition);
-    tableStack->push_back(ifTable);
+    curTable->name = _stream.str();
+    curTable->keys = findId(statement->condition);
+    findDependencies();
+    tableStack->push_back(curTable);
+    curTable = new Table();
 
     //Copy the current tableStack
     int size = (int)tableStack->size();
