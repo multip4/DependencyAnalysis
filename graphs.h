@@ -63,7 +63,7 @@ class Graphs {
       cstring name;
       EdgeType type;
     };
-
+    
     // The boost graph support for graphviz subgraphs is not very intuitive. In
     // particular the write_graphviz code assumes the existence of a lot of
     // properties. See
@@ -76,7 +76,8 @@ class Graphs {
     using edgeProperties =
         boost::property<boost::edge_attribute_t, GraphvizAttributes,
         boost::property<boost::edge_name_t, cstring,
-        boost::property<boost::edge_index_t, int, Edge> > >;
+        boost::property<boost::edge_index_t, int, 
+        Edge> > >;
     using graphProperties =
         boost::property<boost::graph_name_t, cstring,
         boost::property<boost::graph_graph_attribute_t, GraphvizAttributes,
@@ -87,11 +88,16 @@ class Graphs {
                                          graphProperties>;
     using Graph = boost::subgraph<Graph_>;
     using vertex_t = boost::graph_traits<Graph>::vertex_descriptor;
+    using edge_t = boost::graph_traits<Graph>::edge_descriptor;
 
 
     vertex_t add_vertex(const cstring &name, VertexType type);
     void add_edge(const vertex_t &from, const vertex_t &to, const cstring &name, EdgeType type);
     void writeGraphToFile(const cstring &name);
+    bool isTableIndependent(const vertex_t &v1, const vertex_t &v2);
+    bool isActionIndependent(const vertex_t &v1, const vertex_t &v2);
+    bool isCondition(const vertex_t &v);
+    void deleteActionEdge();
 
     class GraphAttributeSetter {
      public:

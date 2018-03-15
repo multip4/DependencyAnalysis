@@ -70,7 +70,8 @@ namespace multip4 {
       void setCurrentAction(const IR::P4Action *action);
       void saveCurrentAction();
       void clearCurrentActionMap();
-      void findDependencies();
+      void buildDependenceGraph();
+      void findIndependentTables();
 
       ExprSet findId(const IR::Expression *expr);
       void visitExterns(const P4::MethodInstance *instance);

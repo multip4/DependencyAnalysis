@@ -143,7 +143,7 @@ namespace multip4 {
     return v;
   }
 
-  void TableAnalyzer::findDependencies() {
+  void TableAnalyzer::buildDependenceGraph() {
     if (std::find(tableStack->begin(), tableStack->end(), curTable) != tableStack->end()) {
       std::cout << "\n[ERROR] curTable already exists in the tableStack" << std::endl;
       return;
@@ -187,6 +187,27 @@ namespace multip4 {
 
   }
 
+  void TableAnalyzer::findIndependentTables() {
+    for(auto i = tableStack->begin(); i != tableStack->end(); ++i){
+      if (graph->isCondition((*i)->vertex))
+        continue;
+
+      for(auto j = (i+1); j != tableStack->end(); ++j) {
+        if (graph->isCondition((*j)->vertex))
+          continue;
+
+        if(graph->isTableIndependent((*i)->vertex, (*j)->vertex)) {
+          std::cout << "Table " << (*i)->name << " and "
+            "Table " << (*j)->name << " are table-independent." << std:: endl;
+        }
+        if(graph->isActionIndependent((*i)->vertex, (*j)->vertex)) {
+          std::cout << "Table " << (*i)->name << " and "
+            "Table " << (*j)->name << " are action-independent." << std:: endl;
+        }
+      }
+    }
+  }
+
   bool TableAnalyzer::preorder(const IR::PackageBlock *block) {
     for (auto it : block->constantValue) {
       if(it.second->is<IR::ControlBlock>()) {
@@ -201,7 +222,9 @@ namespace multip4 {
         std::cout << "Printing Dependencies..." << std::endl;
         for(auto i = dependencies->begin(); i != dependencies->end(); ++i) 
           (*i).print();
-        graph->writeGraphToFile(fileName + "." + name);
+
+        findIndependentTables();
+
         tableStack = new TableStack();
         dependencies = new Dependencies();
         graph = new Graphs();
@@ -242,7 +265,7 @@ namespace multip4 {
     curTable->name = _stream.str();
     curTable->keys = findId(statement->condition);
     curTable->vertex = graph->add_vertex(curTable->name, Graphs::VertexType::CONDITION);
-    findDependencies();
+    buildDependenceGraph();
     tableStack->push_back(curTable);
     curTable = new Table();
 
@@ -398,7 +421,7 @@ namespace multip4 {
 
     curTable->print();
     curTable->vertex = graph->add_vertex(curTable->name, Graphs::VertexType::TABLE);
-    findDependencies();
+    buildDependenceGraph();
     tableStack->push_back(curTable);
     curTable = new Table();
     return false;
