@@ -43,6 +43,18 @@ namespace multip4 {
       void print();
   };
 
+  class Stat {
+    public:
+      int numTable;
+      int numTableIndependentPair;
+      int numActionIndependentPair;
+      cstring pipelineName;
+      cstring fileName;
+
+      Stat(cstring name, cstring fname);
+      void print();
+  };
+
 
   typedef enum DependencyType { UseDef, DefUse, DefDef } DependencyType;
 
@@ -71,7 +83,7 @@ namespace multip4 {
       void saveCurrentAction();
       void clearCurrentActionMap();
       void buildDependenceGraph();
-      void findIndependentTables();
+      void findIndependentTables(Stat& stat);
 
       ExprSet findId(const IR::Expression *expr);
       void visitExterns(const P4::MethodInstance *instance);

@@ -97,7 +97,7 @@ int main(int argc, char *const argv[]) {
   if (::errorCount() > 0)
     return 1;
 
-  std::cout << "Generating match-action dependency graphs" << std::endl;
+  //std::cout << "Generating match-action dependency graphs" << std::endl;
   multip4::TableAnalyzer ta(&midEnd.refMap, &midEnd.typeMap, options.file);
   top->getMain()->apply(ta);
 

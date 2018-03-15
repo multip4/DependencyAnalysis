@@ -49,6 +49,15 @@ namespace multip4 {
     }
   }
 
+  void Stat::print () {
+    std::cout << fileName << ", " << pipelineName << ", " << numTable << ", "
+      << numTableIndependentPair << ", " << numActionIndependentPair << std::endl;
+  }
+
+  Stat::Stat(cstring name, cstring fname) : numTable(0), 
+    numTableIndependentPair(0), numActionIndependentPair(0),
+    pipelineName(name), fileName(fname) {}
+
   Action::Action() : action(nullptr), def({}), use({}) {}
 
   Dependency::Dependency(Table* _first, Table* _second, DependencyType _type, 
@@ -145,7 +154,7 @@ namespace multip4 {
 
   void TableAnalyzer::buildDependenceGraph() {
     if (std::find(tableStack->begin(), tableStack->end(), curTable) != tableStack->end()) {
-      std::cout << "\n[ERROR] curTable already exists in the tableStack" << std::endl;
+      ::error("[ERROR] curTable already exists in the tableStack");
       return;
     }
 
@@ -187,22 +196,30 @@ namespace multip4 {
 
   }
 
-  void TableAnalyzer::findIndependentTables() {
+  void TableAnalyzer::findIndependentTables(Stat& stat) {
     for(auto i = tableStack->begin(); i != tableStack->end(); ++i){
       if (graph->isCondition((*i)->vertex))
         continue;
+
+      stat.numTable++;
 
       for(auto j = (i+1); j != tableStack->end(); ++j) {
         if (graph->isCondition((*j)->vertex))
           continue;
 
         if(graph->isTableIndependent((*i)->vertex, (*j)->vertex)) {
+          stat.numTableIndependentPair++;
+          /*
           std::cout << "Table " << (*i)->name << " and "
             "Table " << (*j)->name << " are table-independent." << std:: endl;
+          */
         }
         if(graph->isActionIndependent((*i)->vertex, (*j)->vertex)) {
+          stat.numActionIndependentPair++;
+          /*
           std::cout << "Table " << (*i)->name << " and "
             "Table " << (*j)->name << " are action-independent." << std:: endl;
+          */
         }
       }
     }
@@ -212,18 +229,22 @@ namespace multip4 {
     for (auto it : block->constantValue) {
       if(it.second->is<IR::ControlBlock>()) {
         auto name = it.second->to<IR::ControlBlock>()->container->name;
-        std::cout << "\nAnalyzing top-level control " << name << std::endl;
+        //std::cout << "\nAnalyzing top-level control " << name << std::endl;
         visit(it.second->getNode());
         clearCurrentActionMap();
         
+        /*
         std::cout << "Printing Tables..." << std::endl;
         for(auto i = tableStack->begin(); i != tableStack->end(); ++i) 
           (*i)->print();
         std::cout << "Printing Dependencies..." << std::endl;
         for(auto i = dependencies->begin(); i != dependencies->end(); ++i) 
           (*i).print();
+        */
 
-        findIndependentTables();
+        Stat stat(name, fileName);
+        findIndependentTables(stat);
+        stat.print();
 
         tableStack = new TableStack();
         dependencies = new Dependencies();
@@ -317,7 +338,7 @@ namespace multip4 {
     
     //std::cout << "    Extern: " << instance->expr->method << std::endl;
     if (args->size() != params->size()) {
-      std::cout << "ERROR: the number of args / params does not match" << std::endl;
+      ::error("ERROR: the number of args / params does not match");
       return;
     }
 
@@ -396,7 +417,7 @@ namespace multip4 {
 
   bool TableAnalyzer::preorder(const IR::P4Table *table) {
     //Name
-    std::cout << "  P4Table: " << table->controlPlaneName() << std::endl;
+    //std::cout << "  P4Table: " << table->controlPlaneName() << std::endl;
     curTable->name = table->controlPlaneName();
 
     //Key
@@ -419,7 +440,7 @@ namespace multip4 {
       }
     }
 
-    curTable->print();
+    //curTable->print();
     curTable->vertex = graph->add_vertex(curTable->name, Graphs::VertexType::TABLE);
     buildDependenceGraph();
     tableStack->push_back(curTable);
@@ -438,7 +459,7 @@ namespace multip4 {
   }
 
   bool TableAnalyzer::preorder(const IR::P4Action *action) {
-    std::cout << "  P4Action: " << action->toString() << std::endl;
+    //std::cout << "  P4Action: " << action->toString() << std::endl;
     setCurrentAction(action);
     visit(action->body);
     saveCurrentAction();
