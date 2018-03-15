@@ -19,8 +19,7 @@ actions.
 4. Build it! `cd [p4]/p4c/build & make -j10`
 5. Go to `test` directory, and test some p4 programs.
   - Currently p4c-multip4 does not include directory `p4include` automatically. 
-  - You need to change `<v1model.p4>` and `<core.p4>` to 
-    `"p4include/v1model.p4"` and `"p4include/core.p4"`, respectively.
+  - `./p4c-multip4 [test.p4] -I[p4]/p4c/p4include`
 
 ## Contact Info
 
