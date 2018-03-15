@@ -9,10 +9,10 @@ Table Analyzer analyzes the dependency among tables and actions.
   each control block.
   - Add `graphs->writeGraphToFile("file/name")` in `preorder(PackageBlock)`.
 - Printing stats is supported. Table Analyzer calculates:
-  - # of Tables
-  - # of table-independent pairs (no data dependence between two)
-  - # of match-independent pairs (no key-action dependence but action-action
-    dependence)
+  - the number of Tables
+  - the number of table-independent pairs (no data dependence between two)
+  - the number of match-independent pairs (no key-action dependence but 
+    action-action dependence)
 
 ## Getting started
 
