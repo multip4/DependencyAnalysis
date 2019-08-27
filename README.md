@@ -1,5 +1,6 @@
-p4c-multip4: Multi-piplined FPGA P4 backend compiler
-===================================================
+# p4c-multip4: Data dependency analysis for P4 programs
+
+** **NOTICE: This project will be merged to [p4c-psdn](https://github.com/multip4/p4c-psdn).**
 
 ## Table Analyzer
 
