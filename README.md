@@ -18,8 +18,10 @@ Table Analyzer analyzes the dependency among tables and actions.
 ## Getting started
 
 1. Make sure that you have `p4c` compiler which works properly.
-   - Current p4c version: 77ecabc (there is a bug on `is_const_table`, so you 
-     need to fix it.)
+   - Supported p4c version: 77ecabc
+   - There is a bug on `is_const_table`, so you need to fix it.
+   - Checkout the proper version.
+   - p4c compiler github: https://github.com/p4lang/p4c
 
 2. Install Boost Graph library. `sudo apt-get install libboost-graph-dev`
 3. Clone this repository. `git clone git@github.com:multip4/DependencyAnalysis.git`
@@ -33,4 +35,4 @@ Table Analyzer analyzes the dependency among tables and actions.
 
 ## Contact Info
 
-- Seungbin Song ([sbsong@postech.ac.kr](mailto:sbsong@postech.ac.kr))
+- Seungbin Song ([seungbin@yonsei.ac.kr](mailto:seungbin@yonsei.ac.kr))
