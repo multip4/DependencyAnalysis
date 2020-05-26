@@ -22,11 +22,12 @@ Table Analyzer analyzes the dependency among tables and actions.
      need to fix it.)
 
 2. Install Boost Graph library. `sudo apt-get install libboost-graph-dev`
-3. Clone this repository. `git clone [...]`
-4. Make a symbolic link to `p4c/extensions` directory.
+3. Clone this repository. `git clone git@github.com:multip4/DependencyAnalysis.git`
+4. Rename repository as `p4c-multip4`. `mv DependencyAnalysis p4c-multip4`
+5. Make a symbolic link to `p4c/extensions` directory.
    - `ln -s [path_to_your_p4c-multip4] [p4]/p4c/extensions/p4c-multip4`
-5. Build it! `cd [p4]/p4c/build & make -j10`
-6. Go to `test` directory, and test some p4 programs.
+6. Build it! `cd [p4]/p4c/build & make -j10`
+7. Go to `test` directory, and test some p4 programs.
    - Currently p4c-multip4 does not include directory `p4include` automatically. 
    - `./p4c-multip4 [test.p4] -I[p4]/p4c/p4include`
 
